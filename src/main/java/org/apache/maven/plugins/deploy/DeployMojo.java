@@ -164,9 +164,7 @@ public class DeployMojo extends AbstractDeployMojo {
     }
 
     public void execute() {
-        if (Boolean.parseBoolean(skip)
-                || ("releases".equals(skip) && !session.isVersionSnapshot(project.getVersion()))
-                || ("snapshots".equals(skip) && session.isVersionSnapshot(project.getVersion()))) {
+        if (isSkip(skip, session.isVersionSnapshot(project.getVersion()))) {
             getLog().info("Skipping artifact deployment");
             putState(State.SKIPPED);
         } else {

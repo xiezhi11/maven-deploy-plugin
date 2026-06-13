@@ -234,9 +234,7 @@ public class DeployFileMojo extends AbstractDeployMojo {
 
     @SuppressWarnings("checkstyle:MethodLength")
     public void execute() throws MojoException {
-        if (Boolean.parseBoolean(skip)
-                || ("releases".equals(skip) && !session.isVersionSnapshot(version))
-                || ("snapshots".equals(skip) && session.isVersionSnapshot(version))) {
+        if (isSkip(skip, session.isVersionSnapshot(version))) {
             getLog().info("Skipping artifact deployment");
             return;
         }

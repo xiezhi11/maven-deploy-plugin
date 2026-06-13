@@ -58,6 +58,26 @@ public abstract class AbstractDeployMojo implements Mojo {
 
     /* Setters and Getters */
 
+    /**
+     * Determines whether deployment should be skipped based on the skip parameter value and version.
+     * Supports three modes:
+     * <ul>
+     *     <li><code>true</code>: always skip</li>
+     *     <li><code>releases</code>: skip if the version is a release (not a snapshot)</li>
+     *     <li><code>snapshots</code>: skip if the version is a snapshot</li>
+     *     <li>any other values will be considered as <code>false</code></li>
+     * </ul>
+     *
+     * @param skip the skip parameter value
+     * @param isSnapshot whether the version being deployed is a snapshot
+     * @return true if deployment should be skipped, false otherwise
+     */
+    protected static boolean isSkip(String skip, boolean isSnapshot) {
+        return Boolean.parseBoolean(skip)
+                || ("releases".equals(skip) && !isSnapshot)
+                || ("snapshots".equals(skip) && isSnapshot);
+    }
+
     void failIfOffline() throws MojoException {
         if (offline) {
             throw new MojoException("Cannot deploy artifacts when Maven is in offline mode");

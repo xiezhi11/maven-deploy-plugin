@@ -142,6 +142,84 @@ class DeployMojoTest {
     @Test
     @InjectMojo(goal = "deploy")
     @MojoParameter(name = "deployAtEnd", value = "false")
+    void skippingDeployWithReleasesOnSnapshotVersion(DeployMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        File file = new File(getBasedir(), "target/test-classes/unit/maven-deploy-test-1.0-SNAPSHOT.jar");
+        assertTrue(file.exists());
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        artifactManager.setPath(project.getMainArtifact().get(), file.toPath());
+
+        // Project version is "1.0-SNAPSHOT", skip=releases should NOT skip
+        setVariableValueToObject(mojo, "skip", "releases");
+
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNotNull(request, "Deployment should NOT be skipped for snapshot version when skip=releases");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy")
+    @MojoParameter(name = "deployAtEnd", value = "false")
+    void skippingDeployWithSnapshotsOnSnapshotVersion(DeployMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        File file = new File(getBasedir(), "target/test-classes/unit/maven-deploy-test-1.0-SNAPSHOT.jar");
+        assertTrue(file.exists());
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        artifactManager.setPath(project.getMainArtifact().get(), file.toPath());
+
+        // Project version is "1.0-SNAPSHOT", skip=snapshots should skip
+        setVariableValueToObject(mojo, "skip", "snapshots");
+
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNull(request, "Deployment should be skipped for snapshot version when skip=snapshots");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy")
+    @MojoParameter(name = "deployAtEnd", value = "false")
+    void skippingDeployWithSnapshotsOnReleaseVersion(DeployMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        File file = new File(getBasedir(), "target/test-classes/unit/maven-deploy-test-1.0-SNAPSHOT.jar");
+        assertTrue(file.exists());
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        // Change version to release
+        ((ProjectStub) project).setVersion("1.0");
+        ((ProducedArtifactStub) project.getMainArtifact().get()).setVersion("1.0");
+        artifactManager.setPath(project.getMainArtifact().get(), file.toPath());
+
+        // Project version is "1.0" (release), skip=snapshots should NOT skip
+        setVariableValueToObject(mojo, "skip", "snapshots");
+
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNotNull(request, "Deployment should NOT be skipped for release version when skip=snapshots");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy")
+    @MojoParameter(name = "deployAtEnd", value = "false")
+    void skippingDeployWithReleasesOnReleaseVersion(DeployMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        File file = new File(getBasedir(), "target/test-classes/unit/maven-deploy-test-1.0-SNAPSHOT.jar");
+        assertTrue(file.exists());
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        // Change version to release
+        ((ProjectStub) project).setVersion("1.0");
+        ((ProducedArtifactStub) project.getMainArtifact().get()).setVersion("1.0");
+        artifactManager.setPath(project.getMainArtifact().get(), file.toPath());
+
+        // Project version is "1.0" (release), skip=releases should skip
+        setVariableValueToObject(mojo, "skip", "releases");
+
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNull(request, "Deployment should be skipped for release version when skip=releases");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy")
+    @MojoParameter(name = "deployAtEnd", value = "false")
     void deployIfArtifactFileIsNull(DeployMojo mojo) throws Exception {
         assertNotNull(mojo);
 
@@ -291,6 +369,10 @@ class DeployMojoTest {
         when(session.createRemoteRepository(any()))
                 .thenAnswer(iom ->
                         session.getService(RepositoryFactory.class).createRemote(iom.getArgument(0, Repository.class)));
+        when(session.isVersionSnapshot(any())).thenAnswer(iom -> {
+            String version = iom.getArgument(0, String.class);
+            return version != null && version.endsWith("-SNAPSHOT");
+        });
         return session;
     }
 

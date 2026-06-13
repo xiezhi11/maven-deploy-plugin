@@ -49,6 +49,7 @@ import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -140,6 +141,105 @@ class DeployFileMojoTest {
             assertEquals(packaging, model.getPackaging());
             assertEquals("POM was created from deploy:deploy-file", model.getDescription());
         });
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-deploy-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${session.topDirectory}/src/test/resources/unit/maven-deploy-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "repositoryId", value = "deploy-test")
+    @MojoParameter(name = "url", value = "file://${session.topDirectory}/target/remote-repo/deploy-file")
+    @MojoParameter(name = "skip", value = "true")
+    void skipDeployFileWithTrue(DeployFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNull(request, "Deployment should be skipped when skip=true");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-deploy-file-test")
+    @MojoParameter(name = "version", value = "1.0")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${session.topDirectory}/src/test/resources/unit/maven-deploy-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "repositoryId", value = "deploy-test")
+    @MojoParameter(name = "url", value = "file://${session.topDirectory}/target/remote-repo/deploy-file")
+    @MojoParameter(name = "skip", value = "releases")
+    void skipDeployFileWithReleasesOnReleaseVersion(DeployFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        // Version is "1.0" (release), skip=releases should skip
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNull(request, "Deployment should be skipped for release version when skip=releases");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-deploy-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${session.topDirectory}/src/test/resources/unit/maven-deploy-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "repositoryId", value = "deploy-test")
+    @MojoParameter(name = "url", value = "file://${session.topDirectory}/target/remote-repo/deploy-file")
+    @MojoParameter(name = "skip", value = "releases")
+    void skipDeployFileWithReleasesOnSnapshotVersion(DeployFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        // Version is "1.0-SNAPSHOT", skip=releases should NOT skip
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNotNull(request, "Deployment should NOT be skipped for snapshot version when skip=releases");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-deploy-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${session.topDirectory}/src/test/resources/unit/maven-deploy-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "repositoryId", value = "deploy-test")
+    @MojoParameter(name = "url", value = "file://${session.topDirectory}/target/remote-repo/deploy-file")
+    @MojoParameter(name = "skip", value = "snapshots")
+    void skipDeployFileWithSnapshotsOnSnapshotVersion(DeployFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        // Version is "1.0-SNAPSHOT", skip=snapshots should skip
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNull(request, "Deployment should be skipped for snapshot version when skip=snapshots");
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-deploy-file-test")
+    @MojoParameter(name = "version", value = "1.0")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${session.topDirectory}/src/test/resources/unit/maven-deploy-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "repositoryId", value = "deploy-test")
+    @MojoParameter(name = "url", value = "file://${session.topDirectory}/target/remote-repo/deploy-file")
+    @MojoParameter(name = "skip", value = "snapshots")
+    void skipDeployFileWithSnapshotsOnReleaseVersion(DeployFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        // Version is "1.0" (release), skip=snapshots should NOT skip
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNotNull(request, "Deployment should NOT be skipped for release version when skip=snapshots");
     }
 
     @Test
@@ -250,6 +350,10 @@ class DeployFileMojoTest {
     private InternalSession createSession() {
         InternalSession session = SessionMock.getMockSession(LOCAL_REPO);
         when(session.getTopDirectory()).thenReturn(Paths.get(getBasedir()));
+        when(session.isVersionSnapshot(any())).thenAnswer(iom -> {
+            String version = iom.getArgument(0, String.class);
+            return version != null && version.endsWith("-SNAPSHOT");
+        });
         return session;
     }
 }
