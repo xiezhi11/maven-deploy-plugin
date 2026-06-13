@@ -240,6 +240,17 @@ public class DeployMojo extends AbstractDeployMojo {
         }
         // Deploy
         if (!requests.isEmpty()) {
+            int totalArtifacts =
+                    requests.stream().mapToInt(r -> r.getArtifacts().size()).sum();
+            getLog().info("Deploying " + totalArtifacts + " artifact(s) to " + flattenedRequests.size()
+                    + " repository(ies):");
+            for (Map.Entry<RemoteRepository, Map<Integer, List<ProducedArtifact>>> entry1 :
+                    flattenedRequests.entrySet()) {
+                RemoteRepository repo = entry1.getKey();
+                int total =
+                        entry1.getValue().values().stream().mapToInt(List::size).sum();
+                getLog().info(" - Repository " + repo.getId() + " (" + repo.getUrl() + "): " + total + " artifact(s)");
+            }
             requests.forEach(this::deploy);
         } else {
             getLog().info("No actual deploy requests");

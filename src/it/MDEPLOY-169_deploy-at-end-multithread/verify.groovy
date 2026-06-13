@@ -20,3 +20,10 @@
 assert new File( basedir, "target/repo/org/apache/maven/its/mdeploy-169/multithread/1.0/multithread-1.0.pom" ).exists()
 assert new File( basedir, "module1/target/repo/org/apache/maven/its/mdeploy-169/module1/1.0/module1-1.0.pom" ).exists()
 assert new File( basedir, "module2/target/repo/org/apache/maven/its/mdeploy-169/module2/1.0/module2-1.0.pom" ).exists()
+
+File buildLog = new File( basedir, 'build.log' )
+assert buildLog.exists()
+// Verify deferred deployment summary logs
+assert buildLog.text.contains( "[INFO] Deploying 7 artifact(s) to 3 repository(ies):" )
+assert ( buildLog.text =~ /\[INFO\]  - Repository it \(.+\): 2 artifact\(s\)/ ).find()
+assert ( buildLog.text =~ /\[INFO\]  - Repository it \(.+\): 3 artifact\(s\)/ ).find()

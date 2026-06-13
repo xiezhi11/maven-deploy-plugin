@@ -30,3 +30,7 @@ assert buildLog.text.contains( "[INFO] Deferring deploy for org.apache.maven.its
 // Last module does not emit this misleading message, as it IS "the end", not deferring anymore
 //assert buildLog.text.contains( "[INFO] Deferring deploy for org.apache.maven.its.deploy.dae.pass:module3:1.0 at end" )
 
+// Verify deferred deployment summary logs
+assert buildLog.text.contains( "[INFO] Deploying 8 artifact(s) to 1 repository(ies):" )
+assert ( buildLog.text =~ /\[INFO\]  - Repository it \(.+\): 8 artifact\(s\)/ ).find()
+
