@@ -322,24 +322,10 @@ public class DeployFileMojo extends AbstractDeployMojo {
             deployables.add(javadocArtifact);
         }
 
+        validateSideArtifacts();
+
         if (files != null) {
-            if (types == null) {
-                throw new MojoException("You must specify 'types' if you specify 'files'");
-            }
-            if (classifiers == null) {
-                throw new MojoException("You must specify 'classifiers' if you specify 'files'");
-            }
             int filesLength = countCommas(files);
-            int typesLength = countCommas(types);
-            int classifiersLength = countCommas(classifiers);
-            if (typesLength != filesLength) {
-                throw new MojoException("You must specify the same number of entries in 'files' and "
-                        + "'types' (respectively " + filesLength + " and " + typesLength + " entries )");
-            }
-            if (classifiersLength != filesLength) {
-                throw new MojoException("You must specify the same number of entries in 'files' and "
-                        + "'classifiers' (respectively " + filesLength + " and " + classifiersLength + " entries )");
-            }
             int fi = 0;
             int ti = 0;
             int ci = 0;
@@ -380,13 +366,6 @@ public class DeployFileMojo extends AbstractDeployMojo {
                 fi = nfi + 1;
                 ti = nti + 1;
                 ci = nci + 1;
-            }
-        } else {
-            if (types != null) {
-                throw new MojoException("You must specify 'files' if you specify 'types'");
-            }
-            if (classifiers != null) {
-                throw new MojoException("You must specify 'files' if you specify 'classifiers'");
             }
         }
 
@@ -555,6 +534,51 @@ public class DeployFileMojo extends AbstractDeployMojo {
 
     void setClassifier(String classifier) {
         this.classifier = classifier;
+    }
+
+    void setFiles(String files) {
+        this.files = files;
+    }
+
+    void setTypes(String types) {
+        this.types = types;
+    }
+
+    void setClassifiers(String classifiers) {
+        this.classifiers = classifiers;
+    }
+
+    /**
+     * Validates that the side-artifact parameters ({@code files}, {@code types}, {@code classifiers})
+     * are consistent: either none is specified, or all three are specified with the same number of entries.
+     *
+     * @throws MojoException if the parameters are inconsistent
+     */
+    void validateSideArtifacts() {
+        if (files != null) {
+            if (types == null) {
+                throw new MojoException("You must specify 'types' if you specify 'files'");
+            }
+            if (classifiers == null) {
+                throw new MojoException("You must specify 'classifiers' if you specify 'files'");
+            }
+            int filesCount = countCommas(files) + 1;
+            int typesCount = countCommas(types) + 1;
+            int classifiersCount = countCommas(classifiers) + 1;
+            if (filesCount != typesCount || filesCount != classifiersCount) {
+                throw new MojoException("Side artifacts parameters must have the same number of entries: "
+                        + "'files' has " + filesCount + " entries, "
+                        + "'types' has " + typesCount + " entries, "
+                        + "'classifiers' has " + classifiersCount + " entries");
+            }
+        } else {
+            if (types != null) {
+                throw new MojoException("You must specify 'files' if you specify 'types'");
+            }
+            if (classifiers != null) {
+                throw new MojoException("You must specify 'files' if you specify 'classifiers'");
+            }
+        }
     }
 
     // these below should be shared (duplicated in m-install-p, m-deploy-p)

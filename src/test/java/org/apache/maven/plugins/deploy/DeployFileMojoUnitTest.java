@@ -27,7 +27,10 @@ import org.apache.maven.api.plugin.MojoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="jerome@coffeebreaks.org">Jerome Lacoste</a>
@@ -116,5 +119,108 @@ class DeployFileMojoUnitTest {
                 .packaging(packaging)
                 .parent(parent)
                 .build();
+    }
+
+    @Test
+    void sideArtifactsMismatchBetweenFilesAndTypes() {
+        mojo.setFiles("a.jar,b.jar");
+        mojo.setTypes("jar");
+        mojo.setClassifiers("sources,javadoc");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertTrue(e.getMessage().contains("'files' has 2 entries"), e.getMessage());
+        assertTrue(e.getMessage().contains("'types' has 1 entries"), e.getMessage());
+        assertTrue(e.getMessage().contains("'classifiers' has 2 entries"), e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsMismatchBetweenFilesAndClassifiers() {
+        mojo.setFiles("a.jar");
+        mojo.setTypes("jar");
+        mojo.setClassifiers("sources,javadoc");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertTrue(e.getMessage().contains("'files' has 1 entries"), e.getMessage());
+        assertTrue(e.getMessage().contains("'types' has 1 entries"), e.getMessage());
+        assertTrue(e.getMessage().contains("'classifiers' has 2 entries"), e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsMismatchAmongAllThree() {
+        mojo.setFiles("a.jar,b.jar");
+        mojo.setTypes("jar,war,ear");
+        mojo.setClassifiers("sources");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertTrue(e.getMessage().contains("'files' has 2 entries"), e.getMessage());
+        assertTrue(e.getMessage().contains("'types' has 3 entries"), e.getMessage());
+        assertTrue(e.getMessage().contains("'classifiers' has 1 entries"), e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsMissingTypesWhenFilesSpecified() {
+        mojo.setFiles("a.jar");
+        mojo.setTypes(null);
+        mojo.setClassifiers("sources");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'types' if you specify 'files'", e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsMissingClassifiersWhenFilesSpecified() {
+        mojo.setFiles("a.jar");
+        mojo.setTypes("jar");
+        mojo.setClassifiers(null);
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'classifiers' if you specify 'files'", e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsMissingFilesWhenTypesSpecified() {
+        mojo.setFiles(null);
+        mojo.setTypes("jar");
+        mojo.setClassifiers(null);
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'files' if you specify 'types'", e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsMissingFilesWhenClassifiersSpecified() {
+        mojo.setFiles(null);
+        mojo.setTypes(null);
+        mojo.setClassifiers("sources");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'files' if you specify 'classifiers'", e.getMessage());
+    }
+
+    @Test
+    void sideArtifactsAllMatch() {
+        mojo.setFiles("a.jar,b.jar");
+        mojo.setTypes("jar,war");
+        mojo.setClassifiers("sources,javadoc");
+
+        assertDoesNotThrow(() -> mojo.validateSideArtifacts());
+    }
+
+    @Test
+    void sideArtifactsSingleEntryEach() {
+        mojo.setFiles("a.jar");
+        mojo.setTypes("jar");
+        mojo.setClassifiers("sources");
+
+        assertDoesNotThrow(() -> mojo.validateSideArtifacts());
+    }
+
+    @Test
+    void sideArtifactsAllNull() {
+        mojo.setFiles(null);
+        mojo.setTypes(null);
+        mojo.setClassifiers(null);
+
+        assertDoesNotThrow(() -> mojo.validateSideArtifacts());
     }
 }
