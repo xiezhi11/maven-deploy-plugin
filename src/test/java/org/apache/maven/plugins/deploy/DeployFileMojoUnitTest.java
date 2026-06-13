@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="jerome@coffeebreaks.org">Jerome Lacoste</a>
@@ -94,6 +96,81 @@ class DeployFileMojoUnitTest {
         mojo.setPackaging("packagingO");
         mojo.initProperties();
         checkMojoProperties("groupO", "artifactO", "versionO", "packagingO");
+    }
+
+    @Test
+    void validateSideArtifactsFailsWhenFilesAndTypesCountDiffer() {
+        mojo.setFiles("artifact-1.jar,artifact-2.jar");
+        mojo.setTypes("jar");
+        mojo.setClassifiers("classifier-1,classifier-2");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        String message = e.getMessage();
+        assertTrue(message.contains("'files'"), message);
+        assertTrue(message.contains("'types'"), message);
+        assertTrue(message.contains("'classifiers'"), message);
+        assertTrue(message.contains("'files' (2 entries)"), message);
+        assertTrue(message.contains("'types' (1 entries)"), message);
+        assertTrue(message.contains("'classifiers' (2 entries)"), message);
+    }
+
+    @Test
+    void validateSideArtifactsFailsWhenFilesAndClassifiersCountDiffer() {
+        mojo.setFiles("artifact-1.jar,artifact-2.jar");
+        mojo.setTypes("jar,war");
+        mojo.setClassifiers("classifier-1");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        String message = e.getMessage();
+        assertTrue(message.contains("'files'"), message);
+        assertTrue(message.contains("'types'"), message);
+        assertTrue(message.contains("'classifiers'"), message);
+        assertTrue(message.contains("'files' (2 entries)"), message);
+        assertTrue(message.contains("'types' (2 entries)"), message);
+        assertTrue(message.contains("'classifiers' (1 entries)"), message);
+    }
+
+    @Test
+    void validateSideArtifactsFailsWhenTypesMissing() {
+        mojo.setFiles("artifact-1.jar");
+        mojo.setClassifiers("classifier-1");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'types' if you specify 'files'", e.getMessage());
+    }
+
+    @Test
+    void validateSideArtifactsFailsWhenClassifiersMissing() {
+        mojo.setFiles("artifact-1.jar");
+        mojo.setTypes("jar");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'classifiers' if you specify 'files'", e.getMessage());
+    }
+
+    @Test
+    void validateSideArtifactsFailsWhenFilesMissingForTypes() {
+        mojo.setTypes("jar");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'files' if you specify 'types'", e.getMessage());
+    }
+
+    @Test
+    void validateSideArtifactsFailsWhenFilesMissingForClassifiers() {
+        mojo.setClassifiers("classifier-1");
+
+        MojoException e = assertThrows(MojoException.class, () -> mojo.validateSideArtifacts());
+        assertEquals("You must specify 'files' if you specify 'classifiers'", e.getMessage());
+    }
+
+    @Test
+    void validateSideArtifactsPassesWhenCountsMatch() {
+        mojo.setFiles("artifact-1.jar,artifact-2.jar");
+        mojo.setTypes("jar,war");
+        mojo.setClassifiers("classifier-1,classifier-2");
+
+        mojo.validateSideArtifacts();
     }
 
     private void checkMojoProperties(

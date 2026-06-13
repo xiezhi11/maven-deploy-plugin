@@ -322,24 +322,10 @@ public class DeployFileMojo extends AbstractDeployMojo {
             deployables.add(javadocArtifact);
         }
 
+        validateSideArtifacts();
+
         if (files != null) {
-            if (types == null) {
-                throw new MojoException("You must specify 'types' if you specify 'files'");
-            }
-            if (classifiers == null) {
-                throw new MojoException("You must specify 'classifiers' if you specify 'files'");
-            }
             int filesLength = countCommas(files);
-            int typesLength = countCommas(types);
-            int classifiersLength = countCommas(classifiers);
-            if (typesLength != filesLength) {
-                throw new MojoException("You must specify the same number of entries in 'files' and "
-                        + "'types' (respectively " + filesLength + " and " + typesLength + " entries )");
-            }
-            if (classifiersLength != filesLength) {
-                throw new MojoException("You must specify the same number of entries in 'files' and "
-                        + "'classifiers' (respectively " + filesLength + " and " + classifiersLength + " entries )");
-            }
             int fi = 0;
             int ti = 0;
             int ci = 0;
@@ -381,13 +367,6 @@ public class DeployFileMojo extends AbstractDeployMojo {
                 ti = nti + 1;
                 ci = nci + 1;
             }
-        } else {
-            if (types != null) {
-                throw new MojoException("You must specify 'files' if you specify 'types'");
-            }
-            if (classifiers != null) {
-                throw new MojoException("You must specify 'files' if you specify 'classifiers'");
-            }
         }
 
         try {
@@ -413,6 +392,44 @@ public class DeployFileMojo extends AbstractDeployMojo {
                 if (pomArtifact != null) {
                     artifactManager.setPath(pomArtifact, null);
                 }
+            }
+        }
+    }
+
+    /**
+     * Validates the comma separated {@link #files}, {@link #types} and {@link #classifiers} parameters used to deploy
+     * extra side artifacts. The three lists must either be all absent, or all present with the exact same number of
+     * entries. On a mismatch a {@link MojoException} is raised whose message names the offending parameters together
+     * with the number of entries found in each of {@code files}, {@code types} and {@code classifiers}, so the wrong
+     * configuration can be located quickly.
+     */
+    void validateSideArtifacts() {
+        if (files != null) {
+            if (types == null) {
+                throw new MojoException("You must specify 'types' if you specify 'files'");
+            }
+            if (classifiers == null) {
+                throw new MojoException("You must specify 'classifiers' if you specify 'files'");
+            }
+            int filesEntries = countCommas(files) + 1;
+            int typesEntries = countCommas(types) + 1;
+            int classifiersEntries = countCommas(classifiers) + 1;
+            String counts = "'files' (" + filesEntries + " entries), 'types' (" + typesEntries
+                    + " entries), 'classifiers' (" + classifiersEntries + " entries)";
+            if (typesEntries != filesEntries) {
+                throw new MojoException(
+                        "The number of entries in 'files' and 'types' must match. Found " + counts + ".");
+            }
+            if (classifiersEntries != filesEntries) {
+                throw new MojoException(
+                        "The number of entries in 'files' and 'classifiers' must match. Found " + counts + ".");
+            }
+        } else {
+            if (types != null) {
+                throw new MojoException("You must specify 'files' if you specify 'types'");
+            }
+            if (classifiers != null) {
+                throw new MojoException("You must specify 'files' if you specify 'classifiers'");
             }
         }
     }
@@ -555,6 +572,18 @@ public class DeployFileMojo extends AbstractDeployMojo {
 
     void setClassifier(String classifier) {
         this.classifier = classifier;
+    }
+
+    void setFiles(String files) {
+        this.files = files;
+    }
+
+    void setTypes(String types) {
+        this.types = types;
+    }
+
+    void setClassifiers(String classifiers) {
+        this.classifiers = classifiers;
     }
 
     // these below should be shared (duplicated in m-install-p, m-deploy-p)
