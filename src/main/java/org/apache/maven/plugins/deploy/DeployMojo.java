@@ -240,10 +240,47 @@ public class DeployMojo extends AbstractDeployMojo {
         }
         // Deploy
         if (!requests.isEmpty()) {
+            summarizeDeferredDeployments(flattenedRequests).forEach(line -> getLog().info(line));
             requests.forEach(this::deploy);
         } else {
             getLog().info("No actual deploy requests");
         }
+    }
+
+    /**
+     * Builds a human-readable, multi-line summary of the deployments deferred by {@code deployAtEnd}: how many
+     * artifacts are about to be uploaded in total, to how many remote repositories, and for each target repository
+     * its id, url and the number of artifacts destined for it. The order mirrors the encounter order of the reactor
+     * so the summary lines up with the subsequent per-repository deploy log lines.
+     * <p>
+     * This method is logging only: it is computed from the already-resolved requests and never alters which requests
+     * are executed, so it does not change the success/failure semantics of the deferred deployment.
+     * </p>
+     * <p>
+     * Visible for testing.
+     * </p>
+     */
+    static List<String> summarizeDeferredDeployments(
+            Map<RemoteRepository, Map<Integer, List<ProducedArtifact>>> flattenedRequests) {
+        Map<RemoteRepository, Integer> artifactsPerRepository = new LinkedHashMap<>();
+        int totalArtifacts = 0;
+        for (Map.Entry<RemoteRepository, Map<Integer, List<ProducedArtifact>>> entry : flattenedRequests.entrySet()) {
+            int count = entry.getValue().values().stream().mapToInt(List::size).sum();
+            artifactsPerRepository.put(entry.getKey(), count);
+            totalArtifacts += count;
+        }
+
+        int repositoryCount = artifactsPerRepository.size();
+        List<String> lines = new ArrayList<>();
+        lines.add("Deploying at end: " + totalArtifacts + " " + (totalArtifacts == 1 ? "artifact" : "artifacts")
+                + " to " + repositoryCount + " remote " + (repositoryCount == 1 ? "repository" : "repositories") + ":");
+        for (Map.Entry<RemoteRepository, Integer> entry : artifactsPerRepository.entrySet()) {
+            RemoteRepository repository = entry.getKey();
+            int count = entry.getValue();
+            lines.add("  " + repository.getId() + " (" + repository.getUrl() + "): " + count + " "
+                    + (count == 1 ? "artifact" : "artifacts"));
+        }
+        return lines;
     }
 
     private void deploy(ArtifactDeployerRequest request) {

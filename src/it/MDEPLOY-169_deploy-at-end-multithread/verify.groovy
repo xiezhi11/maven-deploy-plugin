@@ -20,3 +20,10 @@
 assert new File( basedir, "target/repo/org/apache/maven/its/mdeploy-169/multithread/1.0/multithread-1.0.pom" ).exists()
 assert new File( basedir, "module1/target/repo/org/apache/maven/its/mdeploy-169/module1/1.0/module1-1.0.pom" ).exists()
 assert new File( basedir, "module2/target/repo/org/apache/maven/its/mdeploy-169/module2/1.0/module2-1.0.pom" ).exists()
+
+File buildLog = new File( basedir, 'build.log' )
+assert buildLog.exists()
+// Under deployAtEnd with -T2 the reactor deploys to three distinct per-module repositories;
+// the deferred-deployment summary must enumerate all three so failures are easy to localize.
+assert buildLog.text.contains( "Deploying at end:" )
+assert buildLog.text.contains( "3 remote repositories:" )

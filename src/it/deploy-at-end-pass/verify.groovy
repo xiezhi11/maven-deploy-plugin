@@ -30,3 +30,9 @@ assert buildLog.text.contains( "[INFO] Deferring deploy for org.apache.maven.its
 // Last module does not emit this misleading message, as it IS "the end", not deferring anymore
 //assert buildLog.text.contains( "[INFO] Deferring deploy for org.apache.maven.its.deploy.dae.pass:module3:1.0 at end" )
 
+// deployAtEnd must print an upfront summary of the deferred deployment, before the unified deploy,
+// showing the single target remote repository and how many artifacts are destined for it.
+assert buildLog.text.contains( "Deploying at end:" )
+assert buildLog.text.contains( "1 remote repository:" )
+assert buildLog.readLines().any { line -> line.contains( "it (file:" ) && line.contains( "artifact" ) }
+

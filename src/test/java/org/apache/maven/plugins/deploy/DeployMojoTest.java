@@ -22,7 +22,9 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.maven.api.Artifact;
@@ -63,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -266,6 +269,56 @@ class DeployMojoTest {
         RemoteRepository repository = mojo.getDeploymentRepository(false);
         assertEquals("altReleaseDeploymentRepository", repository.getId());
         assertEquals("http://localhost", repository.getUrl());
+    }
+
+    @Test
+    void summarizeDeferredDeploymentsListsEachRepositoryWithItsArtifactCount() {
+        RemoteRepository repoA = mock(RemoteRepository.class);
+        when(repoA.getId()).thenReturn("central-a");
+        when(repoA.getUrl()).thenReturn("https://repo-a.example/releases");
+        RemoteRepository repoB = mock(RemoteRepository.class);
+        when(repoB.getId()).thenReturn("central-b");
+        when(repoB.getUrl()).thenReturn("https://repo-b.example/releases");
+
+        // repoA receives artifacts spread over two retry buckets (3 total); repoB receives a single artifact.
+        Map<Integer, List<ProducedArtifact>> repoARequests = new LinkedHashMap<>();
+        repoARequests.put(1, Arrays.asList(stubArtifact("a-1"), stubArtifact("a-2")));
+        repoARequests.put(3, Arrays.asList(stubArtifact("a-3")));
+        Map<Integer, List<ProducedArtifact>> repoBRequests = new LinkedHashMap<>();
+        repoBRequests.put(1, Arrays.asList(stubArtifact("b-1")));
+
+        Map<RemoteRepository, Map<Integer, List<ProducedArtifact>>> flattenedRequests = new LinkedHashMap<>();
+        flattenedRequests.put(repoA, repoARequests);
+        flattenedRequests.put(repoB, repoBRequests);
+
+        List<String> summary = DeployMojo.summarizeDeferredDeployments(flattenedRequests);
+
+        assertEquals(3, summary.size());
+        assertEquals("Deploying at end: 4 artifacts to 2 remote repositories:", summary.get(0));
+        assertEquals("  central-a (https://repo-a.example/releases): 3 artifacts", summary.get(1));
+        assertEquals("  central-b (https://repo-b.example/releases): 1 artifact", summary.get(2));
+    }
+
+    @Test
+    void summarizeDeferredDeploymentsUsesSingularWordingForSingleArtifactAndRepository() {
+        RemoteRepository repo = mock(RemoteRepository.class);
+        when(repo.getId()).thenReturn("only");
+        when(repo.getUrl()).thenReturn("https://only.example/releases");
+
+        Map<Integer, List<ProducedArtifact>> repoRequests = new LinkedHashMap<>();
+        repoRequests.put(1, Arrays.asList(stubArtifact("only-1")));
+        Map<RemoteRepository, Map<Integer, List<ProducedArtifact>>> flattenedRequests = new LinkedHashMap<>();
+        flattenedRequests.put(repo, repoRequests);
+
+        List<String> summary = DeployMojo.summarizeDeferredDeployments(flattenedRequests);
+
+        assertEquals(2, summary.size());
+        assertEquals("Deploying at end: 1 artifact to 1 remote repository:", summary.get(0));
+        assertEquals("  only (https://only.example/releases): 1 artifact", summary.get(1));
+    }
+
+    private static ProducedArtifact stubArtifact(String artifactId) {
+        return new ProducedArtifactStub("org.apache.maven.test", artifactId, "", "1.0", "jar");
     }
 
     private ArtifactDeployerRequest execute(DeployMojo mojo) {
