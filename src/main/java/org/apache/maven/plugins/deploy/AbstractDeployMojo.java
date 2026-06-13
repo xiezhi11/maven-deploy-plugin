@@ -64,6 +64,25 @@ public abstract class AbstractDeployMojo implements Mojo {
         }
     }
 
+    /**
+     * Returns {@code true} if deployment must be skipped for the given {@code skip} flag and {@code version}.
+     * <p>
+     * The {@code skip} flag is not a plain boolean; besides {@code true}/{@code false} it accepts:
+     * <ul>
+     *     <li><code>true</code>: always skip</li>
+     *     <li><code>releases</code>: skip when {@code version} is a release</li>
+     *     <li><code>snapshots</code>: skip when {@code version} is a snapshot</li>
+     *     <li>any other value: do not skip</li>
+     * </ul>
+     * Shared by {@code deploy} (evaluated against the project version) and {@code deploy-file} (evaluated against
+     * the deployed file version) so both goals keep identical skip semantics.
+     */
+    protected boolean isSkip(String skip, String version) {
+        return Boolean.parseBoolean(skip)
+                || ("releases".equals(skip) && !session.isVersionSnapshot(version))
+                || ("snapshots".equals(skip) && session.isVersionSnapshot(version));
+    }
+
     public int getRetryFailedDeploymentCount() {
         return retryFailedDeploymentCount;
     }

@@ -142,6 +142,24 @@ class DeployMojoTest {
     @Test
     @InjectMojo(goal = "deploy")
     @MojoParameter(name = "deployAtEnd", value = "false")
+    void skippingSnapshotDeploy(DeployMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        File file = new File(getBasedir(), "target/test-classes/unit/maven-deploy-test-1.0-SNAPSHOT.jar");
+        assertTrue(file.exists());
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        artifactManager.setPath(project.getMainArtifact().get(), file.toPath());
+
+        when(session.isVersionSnapshot(project.getVersion())).thenReturn(true);
+        setVariableValueToObject(mojo, "skip", "snapshots");
+
+        ArtifactDeployerRequest request = execute(mojo);
+        assertNull(request);
+    }
+
+    @Test
+    @InjectMojo(goal = "deploy")
+    @MojoParameter(name = "deployAtEnd", value = "false")
     void deployIfArtifactFileIsNull(DeployMojo mojo) throws Exception {
         assertNotNull(mojo);
 
